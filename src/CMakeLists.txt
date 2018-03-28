@@ -25,7 +25,7 @@ elseif (_GLFW_X11)
                      egl_context.c osmesa_context.c)
 elseif (_GLFW_WAYLAND)
     set(glfw_HEADERS ${common_HEADERS} wl_platform.h
-                     posix_time.h posix_thread.h xkb_unicode.h egl_context.h
+                     posix_time.h posix_thread.h xkb_glfw.h xkb_unicode.h egl_context.h
                      osmesa_context.h)
     set(glfw_SOURCES ${common_SOURCES} wl_init.c wl_monitor.c wl_window.c
                      posix_time.c posix_thread.c xkb_unicode.c

@@ -1240,7 +1240,7 @@ const char* _glfwPlatformGetScancodeName(int scancode)
 
 int _glfwPlatformGetKeyScancode(int key)
 {
-    return _glfw.wl.scancodes[key];
+    return _glfw.wl.xkb.scancodes[key];
 }
 
 int _glfwPlatformCreateCursor(_GLFWcursor* cursor,
