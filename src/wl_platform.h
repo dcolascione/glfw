@@ -203,9 +203,14 @@ typedef struct _GLFWlibraryWayland
 
     int32_t                     keyboardRepeatRate;
     int32_t                     keyboardRepeatDelay;
-    int                         keyboardLastKey;
-    int                         keyboardLastScancode;
-    int                         timerfd;
+    struct {
+        long                    codepoint;
+        int                     plain;
+        int                     glfwKeyCode;
+        int                     scancode;
+        double                  nextRepeatAt;
+        _GLFWwindow*            keyboardFocus;
+    } keyRepeatInfo;
     _GLFWXKBData                xkb;
 
     _GLFWwindow*                pointerFocus;

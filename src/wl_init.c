@@ -32,7 +32,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
-#include <sys/timerfd.h>
 #include <unistd.h>
 #include <wayland-client.h>
 
@@ -425,7 +424,7 @@ static xkb_keysym_t composeSymbol(xkb_keysym_t sym)
     }
 }
 
-static GLFWbool inputChar(_GLFWwindow* window, uint32_t key)
+static void inputChar(_GLFWwindow* window, uint32_t key, GLFWbool *shouldRepeat)
 {
     uint32_t code, numSyms;
     long cp;
@@ -434,6 +433,7 @@ static GLFWbool inputChar(_GLFWwindow* window, uint32_t key)
 
     code = key + 8;
     numSyms = xkb_state_key_get_syms(_glfw.wl.xkb.state, code, &syms);
+    *shouldRepeat = xkb_keymap_key_repeats(_glfw.wl.xkb.keymap, code);
 
     if (numSyms == 1)
     {
@@ -443,11 +443,13 @@ static GLFWbool inputChar(_GLFWwindow* window, uint32_t key)
         {
             const int mods = _glfw.wl.xkb.modifiers;
             const int plain = !(mods & (GLFW_MOD_CONTROL | GLFW_MOD_ALT));
+            if (*shouldRepeat) {
+                _glfw.wl.keyRepeatInfo.codepoint = cp;
+                _glfw.wl.keyRepeatInfo.plain = plain;
+            }
             _glfwInputChar(window, cp, mods, plain);
         }
     }
-
-    return xkb_keymap_key_repeats(_glfw.wl.xkb.keymap, syms[0]);
 }
 
 static void keyboardHandleKey(void* data,
@@ -460,8 +462,6 @@ static void keyboardHandleKey(void* data,
     int keyCode;
     int action;
     _GLFWwindow* window = _glfw.wl.keyboardFocus;
-    GLFWbool shouldRepeat;
-    struct itimerspec timer = {};
 
     if (!window)
         return;
@@ -469,25 +469,25 @@ static void keyboardHandleKey(void* data,
     keyCode = xkb_glfw_to_glfw_key_code(key);
     action = state == WL_KEYBOARD_KEY_STATE_PRESSED
             ? GLFW_PRESS : GLFW_RELEASE;
+    _glfw.wl.keyRepeatInfo.nextRepeatAt = 0;
+    _glfw.wl.keyRepeatInfo.codepoint = -1;
 
     _glfwInputKey(window, keyCode, key, action,
                   _glfw.wl.xkb.modifiers);
 
     if (action == GLFW_PRESS)
     {
-        shouldRepeat = inputChar(window, key);
+        GLFWbool shouldRepeat = GLFW_FALSE;
+        inputChar(window, key, &shouldRepeat);
 
         if (shouldRepeat && _glfw.wl.keyboardRepeatRate > 0)
         {
-            _glfw.wl.keyboardLastKey = keyCode;
-            _glfw.wl.keyboardLastScancode = key;
-            timer.it_interval.tv_sec = _glfw.wl.keyboardRepeatRate / 1000;
-            timer.it_interval.tv_nsec = (_glfw.wl.keyboardRepeatRate % 1000) * 1000000;
-            timer.it_value.tv_sec = _glfw.wl.keyboardRepeatDelay / 1000;
-            timer.it_value.tv_nsec = (_glfw.wl.keyboardRepeatDelay % 1000) * 1000000;
+            _glfw.wl.keyRepeatInfo.glfwKeyCode = keyCode;
+            _glfw.wl.keyRepeatInfo.scancode = key;
+            _glfw.wl.keyRepeatInfo.nextRepeatAt = glfwGetTime() + (double)(_glfw.wl.keyboardRepeatDelay) / 1000.0;
+            _glfw.wl.keyRepeatInfo.keyboardFocus = window;
         }
     }
-    timerfd_settime(_glfw.wl.timerfd, 0, &timer, NULL);
 }
 
 static void keyboardHandleModifiers(void* data,
@@ -738,10 +738,6 @@ int _glfwPlatformInit(void)
 #endif
 
     _glfwInitTimerPOSIX();
-
-    _glfw.wl.timerfd = -1;
-    if (_glfw.wl.seatVersion >= 4)
-        _glfw.wl.timerfd = timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC);
 
     if (_glfw.wl.pointer && _glfw.wl.shm)
     {
