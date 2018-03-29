@@ -82,11 +82,11 @@ static GLFWbool debug_keyboard = GLFW_FALSE;
         S(Shift_L, LEFT_SHIFT); \
         S(Control_L, LEFT_CONTROL); \
         S(Alt_L, LEFT_ALT); \
-        S(Meta_L, LEFT_SUPER); \
+        S(Super_L, LEFT_SUPER); \
         S(Shift_R, RIGHT_SHIFT); \
         S(Control_R, RIGHT_CONTROL); \
         S(Alt_R, RIGHT_ALT); \
-        S(Meta_R, RIGHT_SUPER); \
+        S(Super_R, RIGHT_SUPER); \
         S(Menu, MENU); \
         R(0, 9, 0, 9); \
         R(a, z, A, Z); \
