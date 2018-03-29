@@ -312,3 +312,52 @@ int
 glfw_xkb_to_glfw_key_code(_GLFWXKBData *xkb, unsigned int key) {
     return ((key < sizeof(xkb->keycodes) / sizeof(xkb->keycodes[0])) ? xkb->keycodes[key] : GLFW_KEY_UNKNOWN);
 }
+
+GLFWbool
+glfw_xkb_should_repeat(_GLFWXKBData *xkb, xkb_keycode_t scancode) {
+#ifndef _GLFW_X11
+    scancode += 8;
+#endif
+    return xkb_keymap_key_repeats(xkb->keymap, scancode);
+}
+
+static xkb_keysym_t
+compose_symbol(_GLFWXKBData *xkb, xkb_keysym_t sym) {
+    if (sym == XKB_KEY_NoSymbol || !xkb->composeState) return sym;
+    if (xkb_compose_state_feed(xkb->composeState, sym) != XKB_COMPOSE_FEED_ACCEPTED) return sym;
+    switch (xkb_compose_state_get_status(xkb->composeState)) {
+        case XKB_COMPOSE_COMPOSED:
+            return xkb_compose_state_get_one_sym(xkb->composeState);
+        case XKB_COMPOSE_COMPOSING:
+        case XKB_COMPOSE_CANCELLED:
+            return XKB_KEY_NoSymbol;
+        case XKB_COMPOSE_NOTHING:
+        default:
+            return sym;
+    }
+}
+
+
+void
+glfw_xkb_handle_key_event(_GLFWwindow *window, _GLFWXKBData *xkb, int key, xkb_keycode_t scancode, int action, int *codepoint, int *plain) {
+    const xkb_keysym_t *syms;
+    _glfwInputKey(window, key, scancode, action, xkb->modifiers);
+    *codepoint = -1;
+
+    if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+        xkb_keycode_t code_for_sym = scancode;
+#ifndef _GLFW_X11
+    code_for_sym += 8;
+#endif
+        int num_syms = xkb_state_key_get_syms(xkb->state, code_for_sym, &syms);
+        if (num_syms == 1) {
+            xkb_keysym_t sym = compose_symbol(xkb, syms[0]);
+            *codepoint = _glfwKeySym2Unicode(sym);
+            if (*codepoint != -1) {
+                const int mods = xkb->modifiers;
+                *plain = !(mods & (GLFW_MOD_CONTROL | GLFW_MOD_ALT));
+                _glfwInputChar(window, *codepoint, mods, *plain);
+            }
+        }
+    }
+}

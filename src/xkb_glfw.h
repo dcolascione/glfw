@@ -71,3 +71,5 @@ GLFWbool glfw_xkb_create_context(_GLFWXKBData *xkb);
 GLFWbool glfw_xkb_compile_keymap(_GLFWXKBData *xkb, const char *map_str);
 void glfw_xkb_update_modifiers(_GLFWXKBData *xkb, unsigned int depressed, unsigned int latched, unsigned int locked, unsigned int group);
 int glfw_xkb_to_glfw_key_code(_GLFWXKBData *xkb, unsigned int key);
+GLFWbool glfw_xkb_should_repeat(_GLFWXKBData *xkb, xkb_keycode_t scancode);
+void glfw_xkb_handle_key_event(_GLFWwindow *window, _GLFWXKBData *xkb, int key, xkb_keycode_t scancode, int action, int *codepoint, int *plain);

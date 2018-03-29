@@ -404,54 +404,6 @@ static void keyboardHandleLeave(void* data,
     _glfwInputWindowFocus(window, GLFW_FALSE);
 }
 
-static xkb_keysym_t composeSymbol(xkb_keysym_t sym)
-{
-    if (sym == XKB_KEY_NoSymbol || !_glfw.wl.xkb.composeState)
-        return sym;
-    if (xkb_compose_state_feed(_glfw.wl.xkb.composeState, sym)
-            != XKB_COMPOSE_FEED_ACCEPTED)
-        return sym;
-    switch (xkb_compose_state_get_status(_glfw.wl.xkb.composeState))
-    {
-        case XKB_COMPOSE_COMPOSED:
-            return xkb_compose_state_get_one_sym(_glfw.wl.xkb.composeState);
-        case XKB_COMPOSE_COMPOSING:
-        case XKB_COMPOSE_CANCELLED:
-            return XKB_KEY_NoSymbol;
-        case XKB_COMPOSE_NOTHING:
-        default:
-            return sym;
-    }
-}
-
-static void inputChar(_GLFWwindow* window, uint32_t key, GLFWbool *shouldRepeat)
-{
-    uint32_t code, numSyms;
-    long cp;
-    const xkb_keysym_t *syms;
-    xkb_keysym_t sym;
-
-    code = key + 8;
-    numSyms = xkb_state_key_get_syms(_glfw.wl.xkb.state, code, &syms);
-    *shouldRepeat = xkb_keymap_key_repeats(_glfw.wl.xkb.keymap, code);
-
-    if (numSyms == 1)
-    {
-        sym = composeSymbol(syms[0]);
-        cp = _glfwKeySym2Unicode(sym);
-        if (cp != -1)
-        {
-            const int mods = _glfw.wl.xkb.modifiers;
-            const int plain = !(mods & (GLFW_MOD_CONTROL | GLFW_MOD_ALT));
-            if (*shouldRepeat) {
-                _glfw.wl.keyRepeatInfo.codepoint = cp;
-                _glfw.wl.keyRepeatInfo.plain = plain;
-            }
-            _glfwInputChar(window, cp, mods, plain);
-        }
-    }
-}
-
 static void keyboardHandleKey(void* data,
                               struct wl_keyboard* keyboard,
                               uint32_t serial,
@@ -459,34 +411,26 @@ static void keyboardHandleKey(void* data,
                               uint32_t key,
                               uint32_t state)
 {
-    int keyCode;
-    int action;
     _GLFWwindow* window = _glfw.wl.keyboardFocus;
-
     if (!window)
         return;
-
-    keyCode = glfw_xkb_to_glfw_key_code(&_glfw.wl.xkb, key);
-    action = state == WL_KEYBOARD_KEY_STATE_PRESSED
-            ? GLFW_PRESS : GLFW_RELEASE;
+    int keyCode = glfw_xkb_to_glfw_key_code(&_glfw.wl.xkb, key);
+    int action = state == WL_KEYBOARD_KEY_STATE_PRESSED ? GLFW_PRESS : GLFW_RELEASE;
+    int codepoint = -1, plain = -1;
+    glfw_xkb_handle_key_event(window, &_glfw.wl.xkb, keyCode, key, action, &codepoint, &plain);
     _glfw.wl.keyRepeatInfo.nextRepeatAt = 0;
     _glfw.wl.keyRepeatInfo.codepoint = -1;
 
-    _glfwInputKey(window, keyCode, key, action,
-                  _glfw.wl.xkb.modifiers);
-
-    if (action == GLFW_PRESS)
+    if (action == GLFW_PRESS && _glfw.wl.keyboardRepeatRate > 0 && glfw_xkb_should_repeat(&_glfw.wl.xkb, key))
     {
-        GLFWbool shouldRepeat = GLFW_FALSE;
-        inputChar(window, key, &shouldRepeat);
-
-        if (shouldRepeat && _glfw.wl.keyboardRepeatRate > 0)
-        {
-            _glfw.wl.keyRepeatInfo.glfwKeyCode = keyCode;
-            _glfw.wl.keyRepeatInfo.scancode = key;
-            _glfw.wl.keyRepeatInfo.nextRepeatAt = glfwGetTime() + (double)(_glfw.wl.keyboardRepeatDelay) / 1000.0;
-            _glfw.wl.keyRepeatInfo.keyboardFocus = window;
+        if (codepoint != -1) {
+            _glfw.wl.keyRepeatInfo.codepoint = codepoint;
+            _glfw.wl.keyRepeatInfo.plain = plain;
         }
+        _glfw.wl.keyRepeatInfo.glfwKeyCode = keyCode;
+        _glfw.wl.keyRepeatInfo.scancode = key;
+        _glfw.wl.keyRepeatInfo.nextRepeatAt = glfwGetTime() + (double)(_glfw.wl.keyboardRepeatDelay) / 1000.0;
+        _glfw.wl.keyRepeatInfo.keyboardFocus = window;
     }
 }
 
