@@ -322,16 +322,24 @@ glfw_xkb_keysym_name(xkb_keysym_t sym) {
 }
 
 
-static inline void
-print_mods(unsigned int mods) {
-    debug("mods: ");
-    if (mods & GLFW_MOD_CONTROL) debug("ctrl+");
-    if (mods & GLFW_MOD_ALT) debug("alt+");
-    if (mods & GLFW_MOD_SHIFT) debug("shift+");
-    if (mods & GLFW_MOD_SUPER) debug("super+");
-    if (mods & GLFW_MOD_CAPS_LOCK) debug("capslock+");
-    if (mods & GLFW_MOD_NUM_LOCK) debug("numlock+");
-    debug(" ");
+static inline const char*
+format_mods(unsigned int mods) {
+    static char buf[128];
+    char *p = buf, *s;
+#define pr(x) p += snprintf(p, sizeof(buf) - (p - buf) - 1, x)
+    pr("mods: ");
+    s = p;
+    if (mods & GLFW_MOD_CONTROL) pr("ctrl+");
+    if (mods & GLFW_MOD_ALT) pr("alt+");
+    if (mods & GLFW_MOD_SHIFT) pr("shift+");
+    if (mods & GLFW_MOD_SUPER) pr("super+");
+    if (mods & GLFW_MOD_CAPS_LOCK) pr("capslock+");
+    if (mods & GLFW_MOD_NUM_LOCK) pr("numlock+");
+    if (p == s) pr("none");
+    else p--;
+    pr(" ");
+#undef pr
+    return buf;
 }
 
 void
@@ -369,7 +377,6 @@ glfw_xkb_handle_key_event(_GLFWwindow *window, _GLFWXKBData *xkb, xkb_keycode_t 
         debug("%s ", text);
     }
     int glfw_keycode = glfw_key_for_sym(glfw_sym);
-    print_mods(xkb->modifiers);
-    debug("glfw_keycode: %d\n", glfw_keycode);
+    debug("%sglfw_key: %s\n", format_mods(xkb->modifiers), _glfwGetKeyName(glfw_keycode));
     _glfwInputKeyboard(window, glfw_keycode, glfw_sym, action, xkb->modifiers, text, 0);
 }
