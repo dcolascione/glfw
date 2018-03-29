@@ -286,7 +286,7 @@ glfw_xkb_update_modifiers(_GLFWXKBData *xkb, unsigned int depressed, unsigned in
 
 GLFWbool
 glfw_xkb_should_repeat(_GLFWXKBData *xkb, xkb_keycode_t scancode) {
-#ifndef _GLFW_X11
+#ifdef _GLFW_WAYLAND
     scancode += 8;
 #endif
     return xkb_keymap_key_repeats(xkb->keymap, scancode);
@@ -347,7 +347,7 @@ glfw_xkb_handle_key_event(_GLFWwindow *window, _GLFWXKBData *xkb, xkb_keycode_t 
     const xkb_keysym_t *syms, *clean_syms;
     xkb_keysym_t glfw_sym;
     xkb_keycode_t code_for_sym = scancode;
-#ifndef _GLFW_X11
+#ifdef _GLFW_WAYLAND
     code_for_sym += 8;
 #endif
     debug("scancode: 0x%x release: %d ", scancode, action == GLFW_RELEASE);
@@ -361,7 +361,7 @@ glfw_xkb_handle_key_event(_GLFWwindow *window, _GLFWXKBData *xkb, xkb_keycode_t 
         return;
     }
     glfw_sym = clean_syms[0];
-    debug("clean_sym: 0x%x clean_sym_name: %s ", clean_syms[0], glfw_xkb_keysym_name(clean_syms[0]));
+    debug("clean_sym: %s ", glfw_xkb_keysym_name(clean_syms[0]));
     if (action == GLFW_PRESS || action == GLFW_REPEAT) {
         const char *text_type = "composed_text";
         glfw_sym = compose_symbol(xkb, syms[0]);
@@ -369,10 +369,11 @@ glfw_xkb_handle_key_event(_GLFWwindow *window, _GLFWXKBData *xkb, xkb_keycode_t 
             debug("compose not complete, ignoring.\n");
             return;
         }
-        debug("composed_sym: 0x%x composed_sym_name: %s ", glfw_sym, glfw_xkb_keysym_name(glfw_sym));
-        if (glfw_sym == syms[0]) {
+        debug("composed_sym: %s ", glfw_xkb_keysym_name(glfw_sym));
+        if (glfw_sym == syms[0]) { // composed sym is the same as non-composed sym
             glfw_sym = clean_syms[0];
-            xkb_state_key_get_utf8(xkb->state, code_for_sym, text, sizeof(text));
+            // xkb returns text even if alt and/or super are pressed
+            if ( ((GLFW_MOD_CONTROL | GLFW_MOD_ALT | GLFW_MOD_SUPER) & xkb->modifiers) == 0) xkb_state_key_get_utf8(xkb->state, code_for_sym, text, sizeof(text));
             text_type = "text";
         }
         if (text[0] <= 31 || text[0] == 127) text[0] = 0;  // dont send text for ascii control codes
