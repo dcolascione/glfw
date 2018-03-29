@@ -409,9 +409,7 @@ struct _GLFWwindow
         GLFWcursorposfun        cursorPos;
         GLFWcursorenterfun      cursorEnter;
         GLFWscrollfun           scroll;
-        GLFWkeyfun              key;
-        GLFWcharfun             character;
-        GLFWcharmodsfun         charmods;
+        GLFWkeyboardfun         keyboard;
         GLFWdropfun             drop;
     } callbacks;
 
@@ -713,10 +711,7 @@ void _glfwInputWindowDamage(_GLFWwindow* window);
 void _glfwInputWindowCloseRequest(_GLFWwindow* window);
 void _glfwInputWindowMonitor(_GLFWwindow* window, _GLFWmonitor* monitor);
 
-void _glfwInputKey(_GLFWwindow* window,
-                   int key, int scancode, int action, int mods);
-void _glfwInputChar(_GLFWwindow* window,
-                    unsigned int codepoint, int mods, GLFWbool plain);
+void _glfwInputKeyboard(_GLFWwindow* window, int key, int scancode, int action, int mods, const char* text, int state);
 void _glfwInputScroll(_GLFWwindow* window, double xoffset, double yoffset);
 void _glfwInputMouseClick(_GLFWwindow* window, int button, int action, int mods);
 void _glfwInputCursorPos(_GLFWwindow* window, double xpos, double ypos);

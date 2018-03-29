@@ -151,7 +151,6 @@ typedef VkBool32 (APIENTRY *PFN_vkGetPhysicalDeviceXcbPresentationSupportKHR)(Vk
 
 #include "posix_thread.h"
 #include "posix_time.h"
-#include "xkb_unicode.h"
 #include "glx_context.h"
 #include "egl_context.h"
 #include "osmesa_context.h"
@@ -224,12 +223,6 @@ typedef struct _GLFWlibraryX11
     char*           primarySelectionString;
     // Clipboard string (while the selection is owned)
     char*           clipboardString;
-    // Key name string
-    char            keyName[5];
-    // X11 keycode to GLFW key LUT
-    short int       keycodes[256];
-    // GLFW key to X11 keycode LUT
-    short int       scancodes[GLFW_KEY_LAST + 1];
     // Where to place the cursor when re-enabled
     double          restoreCursorPosX, restoreCursorPosY;
     // The window whose disabled cursor mode is active

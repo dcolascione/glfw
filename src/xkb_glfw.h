@@ -36,9 +36,8 @@ typedef struct {
     struct xkb_context*     context;
     struct xkb_keymap*      keymap;
     struct xkb_state*       state;
+    struct xkb_state*       clean_state;
     struct xkb_compose_state* composeState;
-    short int               keycodes[256];
-    short int               scancodes[GLFW_KEY_LAST + 1];
 
     xkb_mod_mask_t          controlMask;
     xkb_mod_mask_t          altMask;
@@ -70,6 +69,7 @@ void glfw_xkb_release(_GLFWXKBData *xkb);
 GLFWbool glfw_xkb_create_context(_GLFWXKBData *xkb);
 GLFWbool glfw_xkb_compile_keymap(_GLFWXKBData *xkb, const char *map_str);
 void glfw_xkb_update_modifiers(_GLFWXKBData *xkb, unsigned int depressed, unsigned int latched, unsigned int locked, unsigned int group);
-int glfw_xkb_to_glfw_key_code(_GLFWXKBData *xkb, unsigned int key);
 GLFWbool glfw_xkb_should_repeat(_GLFWXKBData *xkb, xkb_keycode_t scancode);
-void glfw_xkb_handle_key_event(_GLFWwindow *window, _GLFWXKBData *xkb, int key, xkb_keycode_t scancode, int action, int *codepoint, int *plain);
+const char* glfw_xkb_keysym_name(xkb_keysym_t sym);
+xkb_keysym_t glfw_xkb_sym_for_key(int key);
+void glfw_xkb_handle_key_event(_GLFWwindow *window, _GLFWXKBData *xkb, xkb_keycode_t scancode, int action);

@@ -30,6 +30,91 @@
 #include "internal.h"
 #include "xkb_glfw.h"
 
+static GLFWbool debug_keyboard = GLFW_FALSE;
+#define debug(...) if (debug_keyboard) printf(__VA_ARGS__);
+
+#define map_key(key) { \
+    switch(key) { \
+        S(space, SPACE); \
+        S(apostrophe, APOSTROPHE); \
+        S(comma, COMMA); \
+        S(minus, MINUS); \
+        S(period, PERIOD); \
+        S(slash, SLASH); \
+        S(semicolon, SEMICOLON); \
+        S(equal, EQUAL); \
+        S(bracketleft, LEFT_BRACKET); \
+        S(backslash, BACKSLASH); \
+        S(bracketright, RIGHT_BRACKET); \
+        S(grave, GRAVE_ACCENT); \
+        S(Escape, ESCAPE); \
+        S(Return, ENTER); \
+        S(Tab, TAB); \
+        S(BackSpace, BACKSPACE); \
+        S(Insert, INSERT); \
+        S(Delete, DELETE); \
+        S(Right, RIGHT); \
+        S(Left, LEFT); \
+        S(Up, UP); \
+        S(Down, DOWN); \
+        S(Page_Up, PAGE_UP); \
+        S(Page_Down, PAGE_DOWN); \
+        S(Home, HOME); \
+        S(End, END); \
+        S(Caps_Lock, CAPS_LOCK); \
+        S(Scroll_Lock, SCROLL_LOCK); \
+        S(Num_Lock, NUM_LOCK); \
+        S(Print, PRINT_SCREEN); \
+        S(Pause, PAUSE); \
+        S(KP_Decimal, KP_DECIMAL); \
+        S(KP_Divide, KP_DIVIDE); \
+        S(KP_Multiply, KP_MULTIPLY); \
+        S(KP_Subtract, KP_SUBTRACT); \
+        S(KP_Add, KP_ADD); \
+        S(KP_Enter, KP_ENTER); \
+        S(KP_Equal, KP_EQUAL); \
+        S(Shift_L, LEFT_SHIFT); \
+        S(Control_L, LEFT_CONTROL); \
+        S(Alt_L, LEFT_ALT); \
+        S(Meta_L, LEFT_SUPER); \
+        S(Shift_R, RIGHT_SHIFT); \
+        S(Control_R, RIGHT_CONTROL); \
+        S(Alt_R, RIGHT_ALT); \
+        S(Meta_R, RIGHT_SUPER); \
+        S(Menu, MENU); \
+        R(0, 9, 0, 9); \
+        R(a, z, A, Z); \
+        D(A, Z, A, Z); \
+        R(F1, F25, F1, F25); \
+        R(KP_0, KP_9, KP_0, KP_9); \
+        default: \
+            break; \
+    } \
+}
+
+static int
+glfw_key_for_sym(xkb_keysym_t key) {
+#define S(f, t) case XKB_KEY_##f: return GLFW_KEY_##t
+#define R(s, e, gs, ...) case XKB_KEY_##s ... XKB_KEY_##e: return GLFW_KEY_##gs + key - XKB_KEY_##s
+#define D(s, e, gs, ...) case XKB_KEY_##s ... XKB_KEY_##e: return GLFW_KEY_##gs + key - XKB_KEY_##s
+    map_key(key)
+    return GLFW_KEY_UNKNOWN;
+#undef D
+#undef R
+#undef S
+};
+
+xkb_keysym_t
+glfw_xkb_sym_for_key(int key) {
+#define S(f, t) case GLFW_KEY_##t: return XKB_KEY_##f
+#define R(s, e, gs, ge) case GLFW_KEY_##gs ... GLFW_KEY_##ge: return XKB_KEY_##s + key - GLFW_KEY_##gs
+#define D(...)
+    map_key(key)
+    return GLFW_KEY_UNKNOWN;
+#undef D
+#undef R
+#undef S
+}
 
 #ifdef _GLFW_X11
 
@@ -90,6 +175,10 @@ glfw_xkb_release(_GLFWXKBData *xkb) {
         xkb_state_unref(xkb->state);
         xkb->state = NULL;
     }
+    if (xkb->clean_state) {
+        xkb_state_unref(xkb->clean_state);
+        xkb->clean_state = NULL;
+    }
     if (xkb->context) {
         xkb_context_unref(xkb->context);
         xkb->context = NULL;
@@ -99,138 +188,12 @@ glfw_xkb_release(_GLFWXKBData *xkb) {
 GLFWbool
 glfw_xkb_create_context(_GLFWXKBData *xkb) {
     xkb->context = xkb_context_new(0);
+    debug_keyboard = getenv("GLFW_DEBUG_KEYBOARD") != NULL;
     if (!xkb->context)
     {
         _glfwInputError(GLFW_PLATFORM_ERROR,
                         "Failed to initialize XKB context");
         return GLFW_FALSE;
-    }
-    int scancode;
-    memset(xkb->keycodes, -1, sizeof(xkb->keycodes));
-    memset(xkb->scancodes, -1, sizeof(xkb->scancodes));
-
-    xkb->keycodes[KEY_GRAVE]      = GLFW_KEY_GRAVE_ACCENT;
-    xkb->keycodes[KEY_1]          = GLFW_KEY_1;
-    xkb->keycodes[KEY_2]          = GLFW_KEY_2;
-    xkb->keycodes[KEY_3]          = GLFW_KEY_3;
-    xkb->keycodes[KEY_4]          = GLFW_KEY_4;
-    xkb->keycodes[KEY_5]          = GLFW_KEY_5;
-    xkb->keycodes[KEY_6]          = GLFW_KEY_6;
-    xkb->keycodes[KEY_7]          = GLFW_KEY_7;
-    xkb->keycodes[KEY_8]          = GLFW_KEY_8;
-    xkb->keycodes[KEY_9]          = GLFW_KEY_9;
-    xkb->keycodes[KEY_0]          = GLFW_KEY_0;
-    xkb->keycodes[KEY_SPACE]      = GLFW_KEY_SPACE;
-    xkb->keycodes[KEY_MINUS]      = GLFW_KEY_MINUS;
-    xkb->keycodes[KEY_EQUAL]      = GLFW_KEY_EQUAL;
-    xkb->keycodes[KEY_Q]          = GLFW_KEY_Q;
-    xkb->keycodes[KEY_W]          = GLFW_KEY_W;
-    xkb->keycodes[KEY_E]          = GLFW_KEY_E;
-    xkb->keycodes[KEY_R]          = GLFW_KEY_R;
-    xkb->keycodes[KEY_T]          = GLFW_KEY_T;
-    xkb->keycodes[KEY_Y]          = GLFW_KEY_Y;
-    xkb->keycodes[KEY_U]          = GLFW_KEY_U;
-    xkb->keycodes[KEY_I]          = GLFW_KEY_I;
-    xkb->keycodes[KEY_O]          = GLFW_KEY_O;
-    xkb->keycodes[KEY_P]          = GLFW_KEY_P;
-    xkb->keycodes[KEY_LEFTBRACE]  = GLFW_KEY_LEFT_BRACKET;
-    xkb->keycodes[KEY_RIGHTBRACE] = GLFW_KEY_RIGHT_BRACKET;
-    xkb->keycodes[KEY_A]          = GLFW_KEY_A;
-    xkb->keycodes[KEY_S]          = GLFW_KEY_S;
-    xkb->keycodes[KEY_D]          = GLFW_KEY_D;
-    xkb->keycodes[KEY_F]          = GLFW_KEY_F;
-    xkb->keycodes[KEY_G]          = GLFW_KEY_G;
-    xkb->keycodes[KEY_H]          = GLFW_KEY_H;
-    xkb->keycodes[KEY_J]          = GLFW_KEY_J;
-    xkb->keycodes[KEY_K]          = GLFW_KEY_K;
-    xkb->keycodes[KEY_L]          = GLFW_KEY_L;
-    xkb->keycodes[KEY_SEMICOLON]  = GLFW_KEY_SEMICOLON;
-    xkb->keycodes[KEY_APOSTROPHE] = GLFW_KEY_APOSTROPHE;
-    xkb->keycodes[KEY_Z]          = GLFW_KEY_Z;
-    xkb->keycodes[KEY_X]          = GLFW_KEY_X;
-    xkb->keycodes[KEY_C]          = GLFW_KEY_C;
-    xkb->keycodes[KEY_V]          = GLFW_KEY_V;
-    xkb->keycodes[KEY_B]          = GLFW_KEY_B;
-    xkb->keycodes[KEY_N]          = GLFW_KEY_N;
-    xkb->keycodes[KEY_M]          = GLFW_KEY_M;
-    xkb->keycodes[KEY_COMMA]      = GLFW_KEY_COMMA;
-    xkb->keycodes[KEY_DOT]        = GLFW_KEY_PERIOD;
-    xkb->keycodes[KEY_SLASH]      = GLFW_KEY_SLASH;
-    xkb->keycodes[KEY_BACKSLASH]  = GLFW_KEY_BACKSLASH;
-    xkb->keycodes[KEY_ESC]        = GLFW_KEY_ESCAPE;
-    xkb->keycodes[KEY_TAB]        = GLFW_KEY_TAB;
-    xkb->keycodes[KEY_LEFTSHIFT]  = GLFW_KEY_LEFT_SHIFT;
-    xkb->keycodes[KEY_RIGHTSHIFT] = GLFW_KEY_RIGHT_SHIFT;
-    xkb->keycodes[KEY_LEFTCTRL]   = GLFW_KEY_LEFT_CONTROL;
-    xkb->keycodes[KEY_RIGHTCTRL]  = GLFW_KEY_RIGHT_CONTROL;
-    xkb->keycodes[KEY_LEFTALT]    = GLFW_KEY_LEFT_ALT;
-    xkb->keycodes[KEY_RIGHTALT]   = GLFW_KEY_RIGHT_ALT;
-    xkb->keycodes[KEY_LEFTMETA]   = GLFW_KEY_LEFT_SUPER;
-    xkb->keycodes[KEY_RIGHTMETA]  = GLFW_KEY_RIGHT_SUPER;
-    xkb->keycodes[KEY_MENU]       = GLFW_KEY_MENU;
-    xkb->keycodes[KEY_NUMLOCK]    = GLFW_KEY_NUM_LOCK;
-    xkb->keycodes[KEY_CAPSLOCK]   = GLFW_KEY_CAPS_LOCK;
-    xkb->keycodes[KEY_PRINT]      = GLFW_KEY_PRINT_SCREEN;
-    xkb->keycodes[KEY_SCROLLLOCK] = GLFW_KEY_SCROLL_LOCK;
-    xkb->keycodes[KEY_PAUSE]      = GLFW_KEY_PAUSE;
-    xkb->keycodes[KEY_DELETE]     = GLFW_KEY_DELETE;
-    xkb->keycodes[KEY_BACKSPACE]  = GLFW_KEY_BACKSPACE;
-    xkb->keycodes[KEY_ENTER]      = GLFW_KEY_ENTER;
-    xkb->keycodes[KEY_HOME]       = GLFW_KEY_HOME;
-    xkb->keycodes[KEY_END]        = GLFW_KEY_END;
-    xkb->keycodes[KEY_PAGEUP]     = GLFW_KEY_PAGE_UP;
-    xkb->keycodes[KEY_PAGEDOWN]   = GLFW_KEY_PAGE_DOWN;
-    xkb->keycodes[KEY_INSERT]     = GLFW_KEY_INSERT;
-    xkb->keycodes[KEY_LEFT]       = GLFW_KEY_LEFT;
-    xkb->keycodes[KEY_RIGHT]      = GLFW_KEY_RIGHT;
-    xkb->keycodes[KEY_DOWN]       = GLFW_KEY_DOWN;
-    xkb->keycodes[KEY_UP]         = GLFW_KEY_UP;
-    xkb->keycodes[KEY_F1]         = GLFW_KEY_F1;
-    xkb->keycodes[KEY_F2]         = GLFW_KEY_F2;
-    xkb->keycodes[KEY_F3]         = GLFW_KEY_F3;
-    xkb->keycodes[KEY_F4]         = GLFW_KEY_F4;
-    xkb->keycodes[KEY_F5]         = GLFW_KEY_F5;
-    xkb->keycodes[KEY_F6]         = GLFW_KEY_F6;
-    xkb->keycodes[KEY_F7]         = GLFW_KEY_F7;
-    xkb->keycodes[KEY_F8]         = GLFW_KEY_F8;
-    xkb->keycodes[KEY_F9]         = GLFW_KEY_F9;
-    xkb->keycodes[KEY_F10]        = GLFW_KEY_F10;
-    xkb->keycodes[KEY_F11]        = GLFW_KEY_F11;
-    xkb->keycodes[KEY_F12]        = GLFW_KEY_F12;
-    xkb->keycodes[KEY_F13]        = GLFW_KEY_F13;
-    xkb->keycodes[KEY_F14]        = GLFW_KEY_F14;
-    xkb->keycodes[KEY_F15]        = GLFW_KEY_F15;
-    xkb->keycodes[KEY_F16]        = GLFW_KEY_F16;
-    xkb->keycodes[KEY_F17]        = GLFW_KEY_F17;
-    xkb->keycodes[KEY_F18]        = GLFW_KEY_F18;
-    xkb->keycodes[KEY_F19]        = GLFW_KEY_F19;
-    xkb->keycodes[KEY_F20]        = GLFW_KEY_F20;
-    xkb->keycodes[KEY_F21]        = GLFW_KEY_F21;
-    xkb->keycodes[KEY_F22]        = GLFW_KEY_F22;
-    xkb->keycodes[KEY_F23]        = GLFW_KEY_F23;
-    xkb->keycodes[KEY_F24]        = GLFW_KEY_F24;
-    xkb->keycodes[KEY_KPSLASH]    = GLFW_KEY_KP_DIVIDE;
-    xkb->keycodes[KEY_KPDOT]      = GLFW_KEY_KP_MULTIPLY;
-    xkb->keycodes[KEY_KPMINUS]    = GLFW_KEY_KP_SUBTRACT;
-    xkb->keycodes[KEY_KPPLUS]     = GLFW_KEY_KP_ADD;
-    xkb->keycodes[KEY_KP0]        = GLFW_KEY_KP_0;
-    xkb->keycodes[KEY_KP1]        = GLFW_KEY_KP_1;
-    xkb->keycodes[KEY_KP2]        = GLFW_KEY_KP_2;
-    xkb->keycodes[KEY_KP3]        = GLFW_KEY_KP_3;
-    xkb->keycodes[KEY_KP4]        = GLFW_KEY_KP_4;
-    xkb->keycodes[KEY_KP5]        = GLFW_KEY_KP_5;
-    xkb->keycodes[KEY_KP6]        = GLFW_KEY_KP_6;
-    xkb->keycodes[KEY_KP7]        = GLFW_KEY_KP_7;
-    xkb->keycodes[KEY_KP8]        = GLFW_KEY_KP_8;
-    xkb->keycodes[KEY_KP9]        = GLFW_KEY_KP_9;
-    xkb->keycodes[KEY_KPCOMMA]    = GLFW_KEY_KP_DECIMAL;
-    xkb->keycodes[KEY_KPEQUAL]    = GLFW_KEY_KP_EQUAL;
-    xkb->keycodes[KEY_KPENTER]    = GLFW_KEY_KP_ENTER;
-
-    for (scancode = 0;  scancode < 256;  scancode++)
-    {
-        if (xkb->keycodes[scancode] > 0)
-            xkb->scancodes[xkb->keycodes[scancode]] = scancode;
     }
     return GLFW_TRUE;
 }
@@ -238,7 +201,7 @@ glfw_xkb_create_context(_GLFWXKBData *xkb) {
 GLFWbool
 glfw_xkb_compile_keymap(_GLFWXKBData *xkb, const char *map_str) {
     const char* locale = NULL;
-    struct xkb_state* state = NULL;
+    struct xkb_state* state = NULL, *clean_state = NULL;
     struct xkb_keymap* keymap = NULL;
     struct xkb_compose_table* compose_table = NULL;
     struct xkb_compose_state* compose_state = NULL;
@@ -248,7 +211,8 @@ glfw_xkb_compile_keymap(_GLFWXKBData *xkb, const char *map_str) {
     if (!keymap) _glfwInputError(GLFW_PLATFORM_ERROR, "Failed to compile XKB keymap");
     else {
         xkb_glfw_load_state(keymap, state);
-        if (!state) {
+        clean_state = xkb_state_new(keymap);
+        if (!state || ! clean_state) {
             _glfwInputError(GLFW_PLATFORM_ERROR, "Failed to create XKB state");
             xkb_keymap_unref(keymap); keymap = NULL;
         } else {
@@ -273,13 +237,15 @@ glfw_xkb_compile_keymap(_GLFWXKBData *xkb, const char *map_str) {
             }
         }
     }
-    if (keymap && state && compose_state) {
+    if (keymap && state && clean_state && compose_state) {
         if (xkb->composeState) xkb_compose_state_unref(xkb->composeState);
         xkb->composeState = compose_state;
         if (xkb->keymap) xkb_keymap_unref(xkb->keymap);
         xkb->keymap = keymap;
         if (xkb->state) xkb_state_unref(xkb->state);
         xkb->state = state;
+        if (xkb->clean_state) xkb_state_unref(xkb->clean_state);
+        xkb->clean_state = clean_state;
     }
     if (xkb->keymap) {
         xkb->controlMask = 1 << xkb_keymap_mod_get_index(xkb->keymap, "Control");
@@ -308,11 +274,6 @@ glfw_xkb_update_modifiers(_GLFWXKBData *xkb, unsigned int depressed, unsigned in
     xkb->modifiers = modifiers;
 }
 
-int
-glfw_xkb_to_glfw_key_code(_GLFWXKBData *xkb, unsigned int key) {
-    return ((key < sizeof(xkb->keycodes) / sizeof(xkb->keycodes[0])) ? xkb->keycodes[key] : GLFW_KEY_UNKNOWN);
-}
-
 GLFWbool
 glfw_xkb_should_repeat(_GLFWXKBData *xkb, xkb_keycode_t scancode) {
 #ifndef _GLFW_X11
@@ -321,12 +282,16 @@ glfw_xkb_should_repeat(_GLFWXKBData *xkb, xkb_keycode_t scancode) {
     return xkb_keymap_key_repeats(xkb->keymap, scancode);
 }
 
-static xkb_keysym_t
+
+static char text[256];
+
+static inline xkb_keysym_t
 compose_symbol(_GLFWXKBData *xkb, xkb_keysym_t sym) {
-    if (sym == XKB_KEY_NoSymbol || !xkb->composeState) return sym;
+    if (sym == XKB_KEY_NoSymbol) return sym;
     if (xkb_compose_state_feed(xkb->composeState, sym) != XKB_COMPOSE_FEED_ACCEPTED) return sym;
     switch (xkb_compose_state_get_status(xkb->composeState)) {
         case XKB_COMPOSE_COMPOSED:
+            xkb_compose_state_get_utf8(xkb->composeState, text, sizeof(text));
             return xkb_compose_state_get_one_sym(xkb->composeState);
         case XKB_COMPOSE_COMPOSING:
         case XKB_COMPOSE_CANCELLED:
@@ -338,26 +303,63 @@ compose_symbol(_GLFWXKBData *xkb, xkb_keysym_t sym) {
 }
 
 
-void
-glfw_xkb_handle_key_event(_GLFWwindow *window, _GLFWXKBData *xkb, int key, xkb_keycode_t scancode, int action, int *codepoint, int *plain) {
-    const xkb_keysym_t *syms;
-    _glfwInputKey(window, key, scancode, action, xkb->modifiers);
-    *codepoint = -1;
+const char*
+glfw_xkb_keysym_name(xkb_keysym_t sym) {
+    static char name[256];
+    name[0] = 0;
+    xkb_keysym_get_name(sym, name, sizeof(name));
+    return name;
+}
 
-    if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-        xkb_keycode_t code_for_sym = scancode;
+
+static inline void
+print_mods(unsigned int mods) {
+    debug("mods: ");
+    if (mods & GLFW_MOD_CONTROL) debug("ctrl+");
+    if (mods & GLFW_MOD_ALT) debug("alt+");
+    if (mods & GLFW_MOD_SHIFT) debug("shift+");
+    if (mods & GLFW_MOD_SUPER) debug("super+");
+    if (mods & GLFW_MOD_CAPS_LOCK) debug("capslock+");
+    if (mods & GLFW_MOD_NUM_LOCK) debug("numlock+");
+    debug(" ");
+}
+
+void
+glfw_xkb_handle_key_event(_GLFWwindow *window, _GLFWXKBData *xkb, xkb_keycode_t scancode, int action) {
+    const xkb_keysym_t *syms, *clean_syms;
+    xkb_keysym_t glfw_sym;
+    xkb_keycode_t code_for_sym = scancode;
 #ifndef _GLFW_X11
     code_for_sym += 8;
 #endif
-        int num_syms = xkb_state_key_get_syms(xkb->state, code_for_sym, &syms);
-        if (num_syms == 1) {
-            xkb_keysym_t sym = compose_symbol(xkb, syms[0]);
-            *codepoint = _glfwKeySym2Unicode(sym);
-            if (*codepoint != -1) {
-                const int mods = xkb->modifiers;
-                *plain = !(mods & (GLFW_MOD_CONTROL | GLFW_MOD_ALT));
-                _glfwInputChar(window, *codepoint, mods, *plain);
-            }
-        }
+    debug("scancode: 0x%x release: %d ", scancode, action == GLFW_RELEASE);
+    int num_syms = xkb_state_key_get_syms(xkb->state, code_for_sym, &syms);
+    int num_clean_syms = xkb_state_key_get_syms(xkb->clean_state, code_for_sym, &clean_syms);
+    text[0] = 0;
+    // According to the documentation of xkb_compose_state_feed it does not
+    // support multi-sym events, so we ignore them
+    if (num_syms != 1 || num_clean_syms != 1) {
+        debug("scancode: 0x%x num_syms: %d num_clean_syms: %d ignoring event\n", scancode, num_syms, num_clean_syms);
+        return;
     }
+    glfw_sym = clean_syms[0];
+    debug("clean_sym: 0x%x clean_sym_name: %s ", clean_syms[0], glfw_xkb_keysym_name(clean_syms[0]));
+    if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+        glfw_sym = compose_symbol(xkb, syms[0]);
+        if (glfw_sym == XKB_KEY_NoSymbol) {
+            debug("compose not complete, ignoring.\n");
+            return;
+        }
+        debug("composed_sym: 0x%x composed_sym_name: %s ", glfw_sym, glfw_xkb_keysym_name(glfw_sym));
+        if (glfw_sym == syms[0]) {
+            glfw_sym = clean_syms[0];
+            xkb_state_key_get_utf8(xkb->state, code_for_sym, text, sizeof(text));
+            debug("text: ");
+        } else debug("composed_text: ");
+        debug("%s ", text);
+    }
+    int glfw_keycode = glfw_key_for_sym(glfw_sym);
+    print_mods(xkb->modifiers);
+    debug("glfw_keycode: %d\n", glfw_keycode);
+    _glfwInputKeyboard(window, glfw_keycode, glfw_sym, action, xkb->modifiers, text, 0);
 }

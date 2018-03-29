@@ -414,21 +414,13 @@ static void keyboardHandleKey(void* data,
     _GLFWwindow* window = _glfw.wl.keyboardFocus;
     if (!window)
         return;
-    int keyCode = glfw_xkb_to_glfw_key_code(&_glfw.wl.xkb, key);
     int action = state == WL_KEYBOARD_KEY_STATE_PRESSED ? GLFW_PRESS : GLFW_RELEASE;
-    int codepoint = -1, plain = -1;
-    glfw_xkb_handle_key_event(window, &_glfw.wl.xkb, keyCode, key, action, &codepoint, &plain);
+    glfw_xkb_handle_key_event(window, &_glfw.wl.xkb, key, action);
     _glfw.wl.keyRepeatInfo.nextRepeatAt = 0;
-    _glfw.wl.keyRepeatInfo.codepoint = -1;
 
     if (action == GLFW_PRESS && _glfw.wl.keyboardRepeatRate > 0 && glfw_xkb_should_repeat(&_glfw.wl.xkb, key))
     {
-        if (codepoint != -1) {
-            _glfw.wl.keyRepeatInfo.codepoint = codepoint;
-            _glfw.wl.keyRepeatInfo.plain = plain;
-        }
-        _glfw.wl.keyRepeatInfo.glfwKeyCode = keyCode;
-        _glfw.wl.keyRepeatInfo.scancode = key;
+        _glfw.wl.keyRepeatInfo.key = key;
         _glfw.wl.keyRepeatInfo.nextRepeatAt = glfwGetTime() + (double)(_glfw.wl.keyboardRepeatDelay) / 1000.0;
         _glfw.wl.keyRepeatInfo.keyboardFocus = window;
     }

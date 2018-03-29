@@ -1239,8 +1239,7 @@ static void processEvent(XEvent *event)
     {
         case KeyPress:
         {
-            int codepoint = -1, plain = -1, key = glfw_xkb_to_glfw_key_code(&_glfw.x11.xkb, event->xkey.keycode);
-            glfw_xkb_handle_key_event(window, &_glfw.x11.xkb, key, event->xkey.keycode, GLFW_PRESS, &codepoint, &plain);
+            glfw_xkb_handle_key_event(window, &_glfw.x11.xkb, event->xkey.keycode, GLFW_PRESS);
             return;
         }
 
@@ -1278,8 +1277,7 @@ static void processEvent(XEvent *event)
                 }
             }
 
-            int codepoint = -1, plain = -1, key = glfw_xkb_to_glfw_key_code(&_glfw.x11.xkb, event->xkey.keycode);
-            glfw_xkb_handle_key_event(window, &_glfw.x11.xkb, key, event->xkey.keycode, GLFW_RELEASE, &codepoint, &plain);
+            glfw_xkb_handle_key_event(window, &_glfw.x11.xkb, event->xkey.keycode, GLFW_RELEASE);
             return;
         }
 
@@ -2643,28 +2641,13 @@ void _glfwPlatformSetCursorMode(_GLFWwindow* window, int mode)
 
 const char* _glfwPlatformGetScancodeName(int scancode)
 {
-    if (!_glfw.x11.xkb.available)
-        return NULL;
 
-    const KeySym keysym = XkbKeycodeToKeysym(_glfw.x11.display, scancode, 0, 0);
-    if (keysym == NoSymbol)
-        return NULL;
-
-    const long ch = _glfwKeySym2Unicode(keysym);
-    if (ch == -1)
-        return NULL;
-
-    const size_t count = encodeUTF8(_glfw.x11.keyName, (unsigned int) ch);
-    if (count == 0)
-        return NULL;
-
-    _glfw.x11.keyName[count] = '\0';
-    return _glfw.x11.keyName;
+    return glfw_xkb_keysym_name(scancode);
 }
 
 int _glfwPlatformGetKeyScancode(int key)
 {
-    return _glfw.x11.scancodes[key];
+    return glfw_xkb_sym_for_key(key);
 }
 
 int _glfwPlatformCreateCursor(_GLFWcursor* cursor,
