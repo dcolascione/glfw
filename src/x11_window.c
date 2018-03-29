@@ -1239,28 +1239,13 @@ static void processEvent(XEvent *event)
     {
         case KeyPress:
         {
-#define translateKey(x) x
-            const int key = translateKey(event->xkey.keycode);
-            const int mods = translateState(event->xkey.state);
-            const int plain = !(mods & (GLFW_MOD_CONTROL | GLFW_MOD_ALT));
-
-            KeySym keysym;
-            XLookupString(&event->xkey, NULL, 0, &keysym, NULL);
-
-            _glfwInputKey(window, key, event->xkey.keycode, GLFW_PRESS, mods);
-
-            const long character = _glfwKeySym2Unicode(keysym);
-            if (character != -1)
-                _glfwInputChar(window, character, mods, plain);
-
+            int codepoint = -1, plain = -1, key = glfw_xkb_to_glfw_key_code(&_glfw.x11.xkb, event->xkey.keycode);
+            glfw_xkb_handle_key_event(window, &_glfw.x11.xkb, key, event->xkey.keycode, GLFW_PRESS, &codepoint, &plain);
             return;
         }
 
         case KeyRelease:
         {
-            const int key = translateKey(event->xkey.keycode);
-            const int mods = translateState(event->xkey.state);
-
             if (!_glfw.x11.xkb.detectable)
             {
                 // HACK: Key repeat events will arrive as KeyRelease/KeyPress
@@ -1293,7 +1278,8 @@ static void processEvent(XEvent *event)
                 }
             }
 
-            _glfwInputKey(window, key, event->xkey.keycode, GLFW_RELEASE, mods);
+            int codepoint = -1, plain = -1, key = glfw_xkb_to_glfw_key_code(&_glfw.x11.xkb, event->xkey.keycode);
+            glfw_xkb_handle_key_event(window, &_glfw.x11.xkb, key, event->xkey.keycode, GLFW_RELEASE, &codepoint, &plain);
             return;
         }
 
