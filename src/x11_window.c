@@ -1240,6 +1240,7 @@ static void processEvent(XEvent *event)
     {
         case KeyPress:
         {
+#define translateKey(x) x
             const int key = translateKey(event->xkey.keycode);
             const int mods = translateState(event->xkey.state);
             const int plain = !(mods & (GLFW_MOD_CONTROL | GLFW_MOD_ALT));

@@ -711,8 +711,6 @@ int _glfwPlatformInit(void)
     _glfw.wl.egl.window_resize = (PFN_wl_egl_window_resize)
         _glfw_dlsym(_glfw.wl.egl.handle, "wl_egl_window_resize");
 
-    load_glfw_xkb();
-
     _glfw.wl.display = wl_display_connect(NULL);
     if (!_glfw.wl.display)
     {

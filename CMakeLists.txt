@@ -243,7 +243,9 @@ if (_GLFW_X11)
     endif()
     find_package(XKBCommon REQUIRED)
     list(APPEND glfw_INCLUDE_DIRS "${XKBCOMMON_INCLUDE_DIRS}")
+    list(APPEND glfw_LIBRARIES "${XKBCOMMON_LIBRARIES}")
     find_package(XKBCommon-X11 REQUIRED)
+    list(APPEND glfw_LIBRARIES "${XKBCOMMON_X11_LIBRARIES}")
 
     # Check for Xcursor (cursor creation from RGBA images)
     if (NOT X11_Xcursor_FOUND)
@@ -274,6 +276,7 @@ if (_GLFW_WAYLAND)
 
     find_package(XKBCommon REQUIRED)
     list(APPEND glfw_INCLUDE_DIRS "${XKBCOMMON_INCLUDE_DIRS}")
+    list(APPEND glfw_LIBRARIES "${XKBCOMMON_LIBRARIES}")
 endif()
 
 #--------------------------------------------------------------------

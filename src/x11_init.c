@@ -387,7 +387,6 @@ static GLFWbool initExtensions(void)
             _glfw.x11.xkb.detectable = GLFW_TRUE;
     }
 
-    load_glfw_xkb();
     glfw_xkb_set_x11_events_mask();
     create_glfw_xkb_context();
     glfw_xkb_get_x11_keyboard_id();
