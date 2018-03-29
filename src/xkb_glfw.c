@@ -73,6 +73,12 @@ static GLFWbool debug_keyboard = GLFW_FALSE;
         S(KP_Add, KP_ADD); \
         S(KP_Enter, KP_ENTER); \
         S(KP_Equal, KP_EQUAL); \
+        F(KP_Home, HOME); \
+        F(KP_End, END); \
+        F(KP_Page_Up, PAGE_UP); \
+        F(KP_Page_Down, PAGE_DOWN); \
+        F(KP_Insert, INSERT); \
+        F(KP_Delete, DELETE); \
         S(Shift_L, LEFT_SHIFT); \
         S(Control_L, LEFT_CONTROL); \
         S(Alt_L, LEFT_ALT); \
@@ -95,10 +101,12 @@ static GLFWbool debug_keyboard = GLFW_FALSE;
 static int
 glfw_key_for_sym(xkb_keysym_t key) {
 #define S(f, t) case XKB_KEY_##f: return GLFW_KEY_##t
+#define F(f, t) S(f, t)
 #define R(s, e, gs, ...) case XKB_KEY_##s ... XKB_KEY_##e: return GLFW_KEY_##gs + key - XKB_KEY_##s
-#define D(s, e, gs, ...) case XKB_KEY_##s ... XKB_KEY_##e: return GLFW_KEY_##gs + key - XKB_KEY_##s
+#define D(s, e, gs, ...) R(s, e, gs)
     map_key(key)
     return GLFW_KEY_UNKNOWN;
+#undef F
 #undef D
 #undef R
 #undef S
@@ -107,10 +115,12 @@ glfw_key_for_sym(xkb_keysym_t key) {
 xkb_keysym_t
 glfw_xkb_sym_for_key(int key) {
 #define S(f, t) case GLFW_KEY_##t: return XKB_KEY_##f
+#define F(...)
 #define R(s, e, gs, ge) case GLFW_KEY_##gs ... GLFW_KEY_##ge: return XKB_KEY_##s + key - GLFW_KEY_##gs
 #define D(...)
     map_key(key)
     return GLFW_KEY_UNKNOWN;
+#undef F
 #undef D
 #undef R
 #undef S
