@@ -28,6 +28,9 @@
 
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-compose.h>
+#ifdef _GLFW_X11
+#include <xkbcommon/xkbcommon-x11.h>
+#endif
 
 typedef struct xkb_context* (* PFN_xkb_context_new)(enum xkb_context_flags);
 typedef void (* PFN_xkb_context_unref)(struct xkb_context*);
@@ -40,6 +43,11 @@ typedef void (* PFN_xkb_state_unref)(struct xkb_state*);
 typedef int (* PFN_xkb_state_key_get_syms)(struct xkb_state*, xkb_keycode_t, const xkb_keysym_t**);
 typedef enum xkb_state_component (* PFN_xkb_state_update_mask)(struct xkb_state*, xkb_mod_mask_t, xkb_mod_mask_t, xkb_mod_mask_t, xkb_layout_index_t, xkb_layout_index_t, xkb_layout_index_t);
 typedef xkb_mod_mask_t (* PFN_xkb_state_serialize_mods)(struct xkb_state*, enum xkb_state_component);
+#ifdef _GLFW_X11
+typedef int32_t (* PFN_xkb_x11_get_core_keyboard_device_id)(xcb_connection_t *);
+typedef struct xkb_keymap * (* PFN_xkb_x11_keymap_new_from_device)(struct xkb_context *, xcb_connection_t *, int32_t , enum xkb_keymap_compile_flags);
+typedef struct xkb_state * (* PFN_xkb_x11_state_new_from_device)(struct xkb_keymap *, xcb_connection_t *, int32_t );
+#endif
 
 #define xkb_context_new GLFW_XKB_GLOBAL_NAME.context_new
 #define xkb_context_unref GLFW_XKB_GLOBAL_NAME.context_unref
@@ -52,6 +60,11 @@ typedef xkb_mod_mask_t (* PFN_xkb_state_serialize_mods)(struct xkb_state*, enum 
 #define xkb_state_key_get_syms GLFW_XKB_GLOBAL_NAME.state_key_get_syms
 #define xkb_state_update_mask GLFW_XKB_GLOBAL_NAME.state_update_mask
 #define xkb_state_serialize_mods GLFW_XKB_GLOBAL_NAME.state_serialize_mods
+#ifdef _GLFW_X11
+#define xkb_x11_get_core_keyboard_device_id GLFW_XKB_GLOBAL_NAME.x11_get_core_keyboard_device_id
+#define xkb_x11_keymap_new_from_device GLFW_XKB_GLOBAL_NAME.x11_keymap_new_from_device
+#define xkb_x11_state_new_from_device GLFW_XKB_GLOBAL_NAME.x11_state_new_from_device
+#endif
 
 typedef struct xkb_compose_table* (* PFN_xkb_compose_table_new_from_locale)(struct xkb_context*, const char*, enum xkb_compose_compile_flags);
 typedef void (* PFN_xkb_compose_table_unref)(struct xkb_compose_table*);
@@ -98,6 +111,20 @@ typedef struct {
     PFN_xkb_state_key_get_syms state_key_get_syms;
     PFN_xkb_state_update_mask state_update_mask;
     PFN_xkb_state_serialize_mods state_serialize_mods;
+#ifdef _GLFW_X11
+    void*                   x11_handle;
+    int32_t                 keyboard_device_id;
+    GLFWbool                available;
+    GLFWbool                detectable;
+    int                     majorOpcode;
+    int                     eventBase;
+    int                     errorBase;
+    int                     major;
+    int                     minor;
+    PFN_xkb_x11_get_core_keyboard_device_id x11_get_core_keyboard_device_id;
+    PFN_xkb_x11_keymap_new_from_device x11_keymap_new_from_device;
+    PFN_xkb_x11_state_new_from_device x11_state_new_from_device;
+#endif
 
     PFN_xkb_compose_table_new_from_locale compose_table_new_from_locale;
     PFN_xkb_compose_table_unref compose_table_unref;
@@ -108,6 +135,64 @@ typedef struct {
     PFN_xkb_compose_state_get_one_sym compose_state_get_one_sym;
 } _GLFWXKBData;
 
+#ifdef _GLFW_X11
+#define load_glfw_xkb_x11() {\
+    GLFW_XKB_GLOBAL_NAME.x11_handle = _glfw_dlopen("libxkbcommon-x11.so.0"); \
+    if (!GLFW_XKB_GLOBAL_NAME.x11_handle) \
+    { \
+        _glfwInputError(GLFW_PLATFORM_ERROR, \
+                        "Failed to open libxkbcommon-x11"); \
+        return GLFW_FALSE; \
+    } \
+    bind_xkb_sym(x11_get_core_keyboard_device_id); \
+    bind_xkb_sym(x11_keymap_new_from_device); \
+    bind_xkb_sym(x11_state_new_from_device); \
+}
+
+#define release_glfw_xkb_x11() {\
+    if (GLFW_XKB_GLOBAL_NAME.x11_handle) { \
+        _glfw_dlclose(GLFW_XKB_GLOBAL_NAME.x11_handle); \
+        GLFW_XKB_GLOBAL_NAME.x11_handle = NULL; \
+    } \
+}
+
+#define glfw_xkb_set_x11_events_mask() { \
+    if (!XkbSelectEvents(_glfw.x11.display, XkbUseCoreKbd, XkbNewKeyboardNotifyMask | XkbMapNotifyMask | XkbStateNotifyMask, XkbNewKeyboardNotifyMask | XkbMapNotifyMask | XkbStateNotifyMask)) \
+    { \
+        _glfwInputError(GLFW_PLATFORM_ERROR, "Failed to set XKB events mask"); \
+        return GLFW_FALSE; \
+    } \
+}
+
+#define glfw_xkb_get_x11_keyboard_id() {\
+    GLFW_XKB_GLOBAL_NAME.keyboard_device_id = -1; \
+    xcb_connection_t* conn = XGetXCBConnection(_glfw.x11.display); \
+    if (!conn) { \
+        _glfwInputError(GLFW_PLATFORM_ERROR, "X11: Failed to retrieve XCB connection"); \
+    } else {\
+        GLFW_XKB_GLOBAL_NAME.keyboard_device_id = xkb_x11_get_core_keyboard_device_id(conn); \
+        if (GLFW_XKB_GLOBAL_NAME.keyboard_device_id == -1) _glfwInputError(GLFW_PLATFORM_ERROR, "X11: Failed to retrieve core keyboard device id"); \
+    } \
+}
+
+#define xkb_glfw_load_keymap(keymap, ...) {\
+    xcb_connection_t* conn = XGetXCBConnection(_glfw.x11.display); \
+    if (conn) keymap = xkb_x11_keymap_new_from_device(GLFW_XKB_GLOBAL_NAME.context, conn, GLFW_XKB_GLOBAL_NAME.keyboard_device_id, XKB_KEYMAP_COMPILE_NO_FLAGS); \
+}
+
+#define xkb_glfw_load_state(keymap, state, ...) {\
+    xcb_connection_t* conn = XGetXCBConnection(_glfw.x11.display); \
+    if (conn) state = xkb_x11_state_new_from_device(keymap, conn, GLFW_XKB_GLOBAL_NAME.keyboard_device_id); \
+}
+
+
+#else
+#define load_glfw_xkb_x11()
+#define release_glfw_xkb_x11()
+#define xkb_glfw_load_keymap(keymap, map_str) keymap = xkb_keymap_new_from_string(GLFW_XKB_GLOBAL_NAME.context, map_str, XKB_KEYMAP_FORMAT_TEXT_V1, 0);
+#define xkb_glfw_load_state(keymap, state, ...) state = xkb_state_new(keymap);
+#endif
+
 #define bind_xkb_sym(name) GLFW_XKB_GLOBAL_NAME.name = (PFN_xkb_##name) _glfw_dlsym(GLFW_XKB_GLOBAL_NAME.handle, "xkb_" #name)
 #define load_glfw_xkb() {\
     GLFW_XKB_GLOBAL_NAME.handle = _glfw_dlopen("libxkbcommon.so.0"); \
@@ -117,6 +202,7 @@ typedef struct {
                         "Failed to open libxkbcommon"); \
         return GLFW_FALSE; \
     } \
+    load_glfw_xkb_x11(); \
     bind_xkb_sym(context_new); \
     bind_xkb_sym(context_unref); \
     bind_xkb_sym(keymap_new_from_string); \
@@ -154,6 +240,7 @@ typedef struct {
         xkb_context_unref(GLFW_XKB_GLOBAL_NAME.context); \
         GLFW_XKB_GLOBAL_NAME.context = NULL; \
     } \
+    release_glfw_xkb_x11(); \
     if (GLFW_XKB_GLOBAL_NAME.handle) { \
         _glfw_dlclose(GLFW_XKB_GLOBAL_NAME.handle); \
         GLFW_XKB_GLOBAL_NAME.handle = NULL; \
@@ -306,10 +393,10 @@ typedef struct {
     struct xkb_compose_table* compose_table = NULL;  \
     struct xkb_compose_state* compose_state = NULL;  \
 \
-    keymap = xkb_keymap_new_from_string(GLFW_XKB_GLOBAL_NAME.context, map_str, XKB_KEYMAP_FORMAT_TEXT_V1, 0); \
+    xkb_glfw_load_keymap(keymap, map_str); \
     if (!keymap) _glfwInputError(GLFW_PLATFORM_ERROR, "Failed to compile XKB keymap"); \
     else { \
-        state = xkb_state_new(keymap); \
+        xkb_glfw_load_state(keymap, state); \
         if (!state) { \
             _glfwInputError(GLFW_PLATFORM_ERROR, "Failed to create XKB state"); \
             xkb_keymap_unref(keymap); keymap = NULL; \

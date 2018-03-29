@@ -47,6 +47,9 @@
 // The XInput extension provides raw mouse motion input
 #include <X11/extensions/XInput2.h>
 
+#define GLFW_XKB_GLOBAL_NAME _glfw.x11.xkb
+#include "xkb_glfw.h"
+
 typedef XRRCrtcGamma* (* PFN_XRRAllocGamma)(int);
 typedef void (* PFN_XRRFreeCrtcInfo)(XRRCrtcInfo*);
 typedef void (* PFN_XRRFreeGamma)(XRRCrtcGamma*);
@@ -96,8 +99,6 @@ typedef XineramaScreenInfo* (* PFN_XineramaQueryScreens)(Display*,int*);
 #define XineramaQueryExtension _glfw.x11.xinerama.QueryExtension
 #define XineramaQueryScreens _glfw.x11.xinerama.QueryScreens
 
-typedef XID xcb_window_t;
-typedef XID xcb_visualid_t;
 typedef struct xcb_connection_t xcb_connection_t;
 typedef xcb_connection_t* (* PFN_XGetXCBConnection)(Display*);
 #define XGetXCBConnection _glfw.x11.x11xcb.GetXCBConnection
@@ -180,7 +181,6 @@ typedef struct _GLFWwindowX11
 {
     Colormap        colormap;
     Window          handle;
-    XIC             ic;
 
     GLFWbool        overrideRedirect;
     GLFWbool        iconified;
@@ -219,8 +219,6 @@ typedef struct _GLFWlibraryX11
     Cursor          hiddenCursorHandle;
     // Context for mapping window XIDs to _GLFWwindow pointers
     XContext        context;
-    // XIM input method
-    XIM             im;
     // Most recent error code received by X error handler
     int             errorCode;
     // Primary selection string (while the primary selection is owned)
@@ -318,15 +316,7 @@ typedef struct _GLFWlibraryX11
         PFN_XRRUpdateConfiguration UpdateConfiguration;
     } randr;
 
-    struct {
-        GLFWbool    available;
-        GLFWbool    detectable;
-        int         majorOpcode;
-        int         eventBase;
-        int         errorBase;
-        int         major;
-        int         minor;
-    } xkb;
+    _GLFWXKBData xkb;
 
     struct {
         int         count;
@@ -441,4 +431,3 @@ void _glfwReleaseErrorHandlerX11(void);
 void _glfwInputErrorX11(int error, const char* message);
 
 void _glfwPushSelectionToManagerX11(void);
-
