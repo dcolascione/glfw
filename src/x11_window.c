@@ -1211,18 +1211,17 @@ static void processEvent(XEvent *event)
         XkbEvent *kb_event = (XkbEvent*)event;
         switch(kb_event->any.xkb_type) {
             case XkbNewKeyboardNotify:
-                glfw_xkb_get_x11_keyboard_id();
-                if (_glfw.x11.xkb.keyboard_device_id == -1) return;
+                if(!glfw_xkb_update_x11_keyboard_id(&_glfw.x11.xkb)) return;
                 /* fallthrough */
             case XkbMapNotify:
             {
-                xkb_glfw_compile_keymap(NULL);
+                glfw_xkb_compile_keymap(&_glfw.x11.xkb, NULL);
                 return;
             }
             case XkbStateNotify:
             {
                 XkbStateNotifyEvent *state_event = (XkbStateNotifyEvent*)kb_event;
-                xkb_glfw_update_modifiers(state_event->base_mods, state_event->latched_mods, state_event->locked_mods, state_event->group);
+                glfw_xkb_update_modifiers(&_glfw.x11.xkb, state_event->base_mods, state_event->latched_mods, state_event->locked_mods, state_event->group);
                 return;
             }
         }

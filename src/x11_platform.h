@@ -47,7 +47,6 @@
 // The XInput extension provides raw mouse motion input
 #include <X11/extensions/XInput2.h>
 
-#define GLFW_XKB_GLOBAL_NAME _glfw.x11.xkb
 #include "xkb_glfw.h"
 
 typedef XRRCrtcGamma* (* PFN_XRRAllocGamma)(int);

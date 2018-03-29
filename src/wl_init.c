@@ -362,7 +362,7 @@ static void keyboardHandleKeymap(void* data,
         close(fd);
         return;
     }
-    xkb_glfw_compile_keymap(mapStr);
+    glfw_xkb_compile_keymap(&_glfw.wl.xkb, mapStr);
     munmap(mapStr, size);
     close(fd);
 
@@ -466,7 +466,7 @@ static void keyboardHandleKey(void* data,
     if (!window)
         return;
 
-    keyCode = xkb_glfw_to_glfw_key_code(key);
+    keyCode = glfw_xkb_to_glfw_key_code(&_glfw.wl.xkb, key);
     action = state == WL_KEYBOARD_KEY_STATE_PRESSED
             ? GLFW_PRESS : GLFW_RELEASE;
     _glfw.wl.keyRepeatInfo.nextRepeatAt = 0;
@@ -498,7 +498,7 @@ static void keyboardHandleModifiers(void* data,
                                     uint32_t modsLocked,
                                     uint32_t group)
 {
-    xkb_glfw_update_modifiers(modsDepressed, modsLatched, modsLocked, group);
+    glfw_xkb_update_modifiers(&_glfw.wl.xkb, modsDepressed, modsLatched, modsLocked, group);
 }
 
 static void keyboardHandleRepeatInfo(void* data,
@@ -722,7 +722,7 @@ int _glfwPlatformInit(void)
     _glfw.wl.registry = wl_display_get_registry(_glfw.wl.display);
     wl_registry_add_listener(_glfw.wl.registry, &registryListener, NULL);
 
-    create_glfw_xkb_context();
+    if (!glfw_xkb_create_context(&_glfw.wl.xkb)) return GLFW_FALSE;
 
     // Sync so we got all registry objects
     wl_display_roundtrip(_glfw.wl.display);
@@ -765,7 +765,7 @@ void _glfwPlatformTerminate(void)
         _glfw.wl.egl.handle = NULL;
     }
 
-    release_glfw_xkb();
+    glfw_xkb_release(&_glfw.wl.xkb);
 
     if (_glfw.wl.cursorTheme)
         wl_cursor_theme_destroy(_glfw.wl.cursorTheme);

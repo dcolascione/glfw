@@ -48,7 +48,6 @@ typedef VkBool32 (APIENTRY *PFN_vkGetPhysicalDeviceWaylandPresentationSupportKHR
 #else
 #include "null_joystick.h"
 #endif
-#define GLFW_XKB_GLOBAL_NAME _glfw.wl.xkb
 #include "xkb_glfw.h"
 #include "xkb_unicode.h"
 #include "egl_context.h"

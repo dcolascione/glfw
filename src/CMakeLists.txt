@@ -21,14 +21,14 @@ elseif (_GLFW_X11)
     set(glfw_HEADERS ${common_HEADERS} x11_platform.h xkb_unicode.h xkb_glfw.h posix_time.h
                      posix_thread.h glx_context.h egl_context.h osmesa_context.h)
     set(glfw_SOURCES ${common_SOURCES} x11_init.c x11_monitor.c x11_window.c
-                     xkb_unicode.c posix_time.c posix_thread.c glx_context.c
+                     xkb_unicode.c xkb_glfw.c posix_time.c posix_thread.c glx_context.c
                      egl_context.c osmesa_context.c)
 elseif (_GLFW_WAYLAND)
     set(glfw_HEADERS ${common_HEADERS} wl_platform.h
                      posix_time.h posix_thread.h xkb_glfw.h xkb_unicode.h egl_context.h
                      osmesa_context.h)
     set(glfw_SOURCES ${common_SOURCES} wl_init.c wl_monitor.c wl_window.c
-                     posix_time.c posix_thread.c xkb_unicode.c
+                     posix_time.c posix_thread.c xkb_unicode.c xkb_glfw.c
                      egl_context.c osmesa_context.c)
 
     ecm_add_wayland_client_protocol(glfw_SOURCES

@@ -387,11 +387,10 @@ static GLFWbool initExtensions(void)
             _glfw.x11.xkb.detectable = GLFW_TRUE;
     }
 
-    glfw_xkb_set_x11_events_mask();
-    create_glfw_xkb_context();
-    glfw_xkb_get_x11_keyboard_id();
-    if (_glfw.x11.xkb.keyboard_device_id == -1) return GLFW_FALSE;
-    xkb_glfw_compile_keymap(NULL);
+    if (!glfw_xkb_set_x11_events_mask()) return GLFW_FALSE;
+    if (!glfw_xkb_create_context(&_glfw.x11.xkb)) return GLFW_FALSE;
+    if (!glfw_xkb_update_x11_keyboard_id(&_glfw.x11.xkb)) return GLFW_FALSE;
+    if (!glfw_xkb_compile_keymap(&_glfw.x11.xkb, NULL)) return GLFW_FALSE;
 
     // Detect whether an EWMH-conformant window manager is running
     detectEWMH();
@@ -674,7 +673,7 @@ void _glfwPlatformTerminate(void)
         _glfw.x11.hiddenCursorHandle = (Cursor) 0;
     }
 
-    release_glfw_xkb();
+    glfw_xkb_release(&_glfw.x11.xkb);
     free(_glfw.x11.primarySelectionString);
     free(_glfw.x11.clipboardString);
 
