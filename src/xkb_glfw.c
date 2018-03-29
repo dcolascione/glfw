@@ -363,6 +363,7 @@ glfw_xkb_handle_key_event(_GLFWwindow *window, _GLFWXKBData *xkb, xkb_keycode_t 
     glfw_sym = clean_syms[0];
     debug("clean_sym: 0x%x clean_sym_name: %s ", clean_syms[0], glfw_xkb_keysym_name(clean_syms[0]));
     if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+        const char *text_type = "composed_text";
         glfw_sym = compose_symbol(xkb, syms[0]);
         if (glfw_sym == XKB_KEY_NoSymbol) {
             debug("compose not complete, ignoring.\n");
@@ -372,9 +373,10 @@ glfw_xkb_handle_key_event(_GLFWwindow *window, _GLFWXKBData *xkb, xkb_keycode_t 
         if (glfw_sym == syms[0]) {
             glfw_sym = clean_syms[0];
             xkb_state_key_get_utf8(xkb->state, code_for_sym, text, sizeof(text));
-            debug("text: ");
-        } else debug("composed_text: ");
-        debug("%s ", text);
+            text_type = "text";
+        }
+        if (text[0] <= 31 || text[0] == 127) text[0] = 0;  // dont send text for ascii control codes
+        if (text[0]) { debug("%s: %s ", text_type, text); }
     }
     int glfw_keycode = glfw_key_for_sym(glfw_sym);
     debug("%sglfw_key: %s\n", format_mods(xkb->modifiers), _glfwGetKeyName(glfw_keycode));
