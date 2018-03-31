@@ -288,10 +288,10 @@ active_unknown_modifiers(_GLFWXKBData *xkb) {
 
 
 void
-glfw_xkb_update_modifiers(_GLFWXKBData *xkb, unsigned int depressed, unsigned int latched, unsigned int locked, unsigned int group) {
+glfw_xkb_update_modifiers(_GLFWXKBData *xkb, xkb_mod_mask_t depressed, xkb_mod_mask_t latched, xkb_mod_mask_t locked, xkb_layout_index_t base_group, xkb_layout_index_t latched_group, xkb_layout_index_t locked_group) {
     if (!xkb->keymap) return;
     xkb->modifiers = 0;
-    xkb_state_update_mask(xkb->state, depressed, latched, locked, 0, 0, group);
+    xkb_state_update_mask(xkb->state, depressed, latched, locked, base_group, latched_group, locked_group);
 #define S(attr, name) if (xkb_state_mod_index_is_active(xkb->state, xkb->attr##Idx, XKB_STATE_MODS_EFFECTIVE)) xkb->modifiers |= GLFW_MOD_##name
     S(control, CONTROL); S(alt, ALT); S(shift, SHIFT); S(super, SUPER); S(capsLock, CAPS_LOCK); S(numLock, NUM_LOCK);
 #undef S
