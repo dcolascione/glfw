@@ -218,6 +218,37 @@ GLFWAPI CGDirectDisplayID glfwGetCocoaMonitor(GLFWmonitor* monitor);
  *  @ingroup native
  */
 GLFWAPI id glfwGetCocoaWindow(GLFWwindow* window);
+
+/*! @brief The function signature for cocoa text input callbacks
+ *
+ *  This is the function signature for cocoa text input callbacks.
+ *
+ *  @param[in] keycode The keycode for the current key press
+ *  @param[in] modifiers The modifiers for the current key press
+ *  @param[in] scancode The scancode for the current key press
+ *
+ *  @sa @ref glfwSetTextInputFilter
+ *
+ *  @since Added in version 4.0.
+ *
+ *  @ingroup native
+ */
+typedef int (* GLFWcocoatextinputfilterfun)(int,int,unsigned int);
+/*! @brief Set the callback used to control which key presses are passed to the cocoa text input system.
+ *
+ *  By default, on macOS, pressing the Option modifier and a letter key
+ *  will generate different unicode text depending on the keyboard layout. If
+ *  you dont want this behavior you can set this callback to a function that
+ *  returns 1 when you dont want a key event to be processed by the Cocoa text input
+ *  system and potentially turned into text.
+ *
+ *  @return The previous filter function or NULL.
+ *
+ *  @since Added in version 4.0.
+ *
+ *  @ingroup native
+ */
+GLFWAPI GLFWcocoatextinputfilterfun glfwSetCocoaTextInputFilter(GLFWwindow* window, GLFWcocoatextinputfilterfun callback);
 #endif
 
 #if defined(GLFW_EXPOSE_NATIVE_NSGL)
@@ -569,4 +600,3 @@ GLFWAPI OSMesaContext glfwGetOSMesaContext(GLFWwindow* window);
 #endif
 
 #endif /* _glfw3_native_h_ */
-
