@@ -327,19 +327,6 @@ static GLFWbool initExtensions(void)
     }
 
 #if defined(__CYGWIN__)
-    _glfw.x11.x11xcb.handle = _glfw_dlopen("libX11-xcb-1.so");
-#else
-    _glfw.x11.x11xcb.handle = _glfw_dlopen("libX11-xcb.so.1");
-#endif
-    if (!_glfw.x11.x11xcb.handle)
-    {
-        _glfwInputError(GLFW_PLATFORM_ERROR, "X11: Failed to load libX11-xcb");
-        return GLFW_FALSE;
-    }
-    _glfw.x11.x11xcb.GetXCBConnection = (PFN_XGetXCBConnection)
-        _glfw_dlsym(_glfw.x11.x11xcb.handle, "XGetXCBConnection");
-
-#if defined(__CYGWIN__)
     _glfw.x11.xrender.handle = _glfw_dlopen("libXrender-1.so");
 #else
     _glfw.x11.xrender.handle = _glfw_dlopen("libXrender.so.1");
@@ -681,12 +668,6 @@ void _glfwPlatformTerminate(void)
     {
         XCloseDisplay(_glfw.x11.display);
         _glfw.x11.display = NULL;
-    }
-
-    if (_glfw.x11.x11xcb.handle)
-    {
-        _glfw_dlclose(_glfw.x11.x11xcb.handle);
-        _glfw.x11.x11xcb.handle = NULL;
     }
 
     if (_glfw.x11.xcursor.handle)

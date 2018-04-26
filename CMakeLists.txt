@@ -220,12 +220,16 @@ endif()
 if (_GLFW_X11)
 
     find_package(X11 REQUIRED)
+    find_package(X11_XCB REQUIRED)
 
     list(APPEND glfw_PKG_DEPS "x11")
+    list(APPEND glfw_PKG_DEPS "x11-xcb")
 
     # Set up library and include paths
     list(APPEND glfw_INCLUDE_DIRS "${X11_X11_INCLUDE_PATH}")
+    list(APPEND glfw_INCLUDE_DIRS "${X11_XCB_INCLUDE_PATH}")
     list(APPEND glfw_LIBRARIES "${X11_X11_LIB}" "${CMAKE_THREAD_LIBS_INIT}")
+    list(APPEND glfw_LIBRARIES "${X11_XCB_LIBRARIES}")
 
     # Check for XRandR (modern resolution switching and gamma control)
     if (NOT X11_Xrandr_FOUND)
