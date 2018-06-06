@@ -249,6 +249,15 @@ typedef int (* GLFWcocoatextinputfilterfun)(int,int,unsigned int);
  *  @ingroup native
  */
 GLFWAPI GLFWcocoatextinputfilterfun glfwSetCocoaTextInputFilter(GLFWwindow* window, GLFWcocoatextinputfilterfun callback);
+/*! @brief Convert a GLFW modifer and key pair into their Cocoa equivalents
+ *
+ *  Useful, for instance, to create Cocoa menu items based on glfw keys.
+ *
+ *  @since Added in version 4.0.
+ *
+ *  @ingroup native
+ */
+GLFWAPI void glfwGetCocoaKeyEquivalent(int glfw_key, int glfw_mods, unsigned short *cocoa_key, int *cocoa_mods);
 #endif
 
 #if defined(GLFW_EXPOSE_NATIVE_NSGL)
