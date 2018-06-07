@@ -25,7 +25,9 @@
 //
 //========================================================================
 
+#define _GNU_SOURCE
 #include "internal.h"
+#include "backend_utils.h"
 
 #include <X11/Xresource.h>
 
@@ -34,6 +36,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <locale.h>
+#include <fcntl.h>
 
 
 // Check whether the specified atom is supported
@@ -589,7 +592,6 @@ Cursor _glfwCreateCursorX11(const GLFWimage* image, int xhot, int yhot)
     return cursor;
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 //////                       GLFW platform API                      //////
 //////////////////////////////////////////////////////////////////////////
@@ -598,6 +600,13 @@ int _glfwPlatformInit(void)
 {
     XInitThreads();
     XrmInitialize();
+
+    if (pipe2(_glfw.x11.eventLoopData.wakeupFds, O_CLOEXEC | O_NONBLOCK) != 0)
+    {
+        _glfwInputError(GLFW_PLATFORM_ERROR,
+                "X11: failed to create self pipe");
+        return GLFW_FALSE;
+    }
 
     _glfw.x11.display = XOpenDisplay(NULL);
     if (!_glfw.x11.display)
@@ -616,6 +625,9 @@ int _glfwPlatformInit(void)
 
         return GLFW_FALSE;
     }
+
+    initPollData(_glfw.x11.eventLoopData.fds, _glfw.x11.eventLoopData.wakeupFds[0], ConnectionNumber(_glfw.x11.display));
+    _glfw.x11.eventLoopData.fds[2].events = POLLIN;
 
     _glfw.x11.screen = DefaultScreen(_glfw.x11.display);
     _glfw.x11.root = RootWindow(_glfw.x11.display, _glfw.x11.screen);
@@ -668,6 +680,7 @@ void _glfwPlatformTerminate(void)
     {
         XCloseDisplay(_glfw.x11.display);
         _glfw.x11.display = NULL;
+        _glfw.x11.eventLoopData.fds[0].fd = -1;
     }
 
     if (_glfw.x11.xcursor.handle)
@@ -714,6 +727,7 @@ void _glfwPlatformTerminate(void)
 #if defined(__linux__)
     _glfwTerminateJoysticksLinux();
 #endif
+    closeFds(_glfw.x11.eventLoopData.wakeupFds, sizeof(_glfw.x11.eventLoopData.wakeupFds)/sizeof(_glfw.x11.eventLoopData.wakeupFds[0]));
 }
 
 const char* _glfwPlatformGetVersionString(void)
