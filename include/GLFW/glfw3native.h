@@ -258,6 +258,30 @@ GLFWAPI GLFWcocoatextinputfilterfun glfwSetCocoaTextInputFilter(GLFWwindow* wind
  *  @ingroup native
  */
 GLFWAPI void glfwGetCocoaKeyEquivalent(int glfw_key, int glfw_mods, unsigned short *cocoa_key, int *cocoa_mods);
+/*! @brief The function signature for Cocoa applicationShouldHandleReopen callbacks
+ *
+ *  This is the function signature for Cocoa applicationShouldHandleReopen callbacks.
+ *
+ *  @param[in] hasVisibleWindows See the documentation for applicationShouldHandleReopen in the Cocoa docs
+ *  @return Either true or false. Value is then returned from applicationShouldHandleReopen to Cocoa.
+ *
+ *  @sa @ref glfwSetApplicationShouldHandleReopen
+ *
+ *  @since Added in version 4.0.
+ *
+ *  @ingroup native
+ */
+typedef int (* GLFWapplicationshouldhandlereopenfun)(int);
+/*! @brief Set the callback used to respond to applicationShouldHandleReopen messages from Cocoa
+ *
+ *  @return The previous filter function or NULL.
+ *
+ *  @since Added in version 4.0.
+ *
+ *  @ingroup native
+ */
+GLFWAPI GLFWapplicationshouldhandlereopenfun glfwSetApplicationShouldHandleReopen(GLFWapplicationshouldhandlereopenfun callback);
+
 #endif
 
 #if defined(GLFW_EXPOSE_NATIVE_NSGL)
